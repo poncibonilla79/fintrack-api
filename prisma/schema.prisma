@@ -1,0 +1,110 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// FinTrack — Esquema de base de datos
+//
+// normativa de escalabilidad:
+//   - Los @map() mantienen snake_case en BD mientras el modelo usa camelCase
+//   - Los índices compuestos priorizan campos de filtrado (userId + fecha)
+//   - Las relaciones onDelete protegen la integridad referencial
+//   - Para agregar una entidad nueva: crear modelo, relación, índice, @map
+// ═══════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+// ─── Usuario ────────────────────────────────────────────────────────────
+// Punto de entrada del sistema. Cada usuario tiene sus propias
+// transacciones, categorías y presupuestos.
+// Para agregar roles (ADMIN/USER), añadir campo role con enum.
+// Para OAuth, agregar provider + providerId como campos opcionales únicos.
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categories   Category[]
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@map("users")
+}
+
+// ─── Categoría ──────────────────────────────────────────────────────────
+// userId = null → categoría global (visible para todos los usuarios).
+// userId = X → categoría privada del usuario.
+// Para internacionalizar nombres, agregar campo locale o i18n_key.
+model Category {
+  id     String          @id @default(cuid())
+  name   String
+  type   TransactionType
+  icon   String?
+  color  String?
+  userId String?                      // null = global, string = del usuario
+
+  user        User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([userId, name])              // nombres únicos por usuario
+  @@index([userId])                     // filtrar categorías del usuario
+  @@index([type])                       // filtrar por INCOME/EXPENSE
+  @@map("categories")
+}
+
+// ─── Transacción ────────────────────────────────────────────────────────
+// Núcleo del sistema. amount en Decimal(12,2) para precisión financiera.
+// El índice [userId, date] es clave para consultas mensuales y gráficos.
+// Para agregar etiquetas/etiquetas, crear modelo Tag y relación N:M.
+model Transaction {
+  id          String          @id @default(cuid())
+  amount      Decimal         @db.Decimal(12, 2)
+  description String
+  date        DateTime
+  type        TransactionType
+  userId      String
+  categoryId  String
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([userId])                     // transacciones del usuario
+  @@index([userId, date])              // ** filtro mensual (clave para recharts) **
+  @@index([categoryId])                // join con categorías
+  @@index([date])                      // consultas globales por fecha
+  @@map("transactions")
+}
+
+// ─── Presupuesto ────────────────────────────────────────────────────────
+// categoryId = null → presupuesto global del mes.
+// categoryId = X → presupuesto por categoría específica.
+// La unique [userId, categoryId, month, year] evita duplicados por mes.
+// Para presupuestos recurrentes, agregar campo isRecurring: Boolean.
+model Budget {
+  id         String  @id @default(cuid())
+  amount     Decimal @db.Decimal(12, 2)
+  month      Int                         // 1-12
+  year       Int
+  categoryId String?                     // null = global
+  userId     String
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId])
+  @@index([userId, month, year])         // consulta mensual de presupuestos
+  @@index([categoryId])
+  @@map("budgets")
+}

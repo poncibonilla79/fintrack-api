@@ -1,0 +1,47 @@
+export interface CategoryBreakdown {
+  name: string;
+  icon: string | null;
+  color: string | null;
+  amount: number;
+  count: number;
+}
+
+export interface MonthlySummaryResponse {
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+  byCategory: CategoryBreakdown[];
+}
+
+export interface BudgetDetail {
+  category: {
+    id: string;
+    name: string;
+    icon: string | null;
+    color: string | null;
+  } | null;
+  budgeted: number;
+  spent: number;
+  remaining: number;
+}
+
+export interface BudgetVsActualResponse {
+  totalBudget: number;
+  totalSpent: number;
+  globalRemaining: number;
+  details: BudgetDetail[];
+}
+
+export interface MonthlyTrend {
+  month: number;
+  year: number;
+  income: number;
+  expense: number;
+}
+
+export interface RawTrendRow {
+  month: number;
+  year: number;
+  income: string;
+  expense: string;
+}

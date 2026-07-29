@@ -41,9 +41,14 @@ export const usersService = {
   async update(id: string, data: UpdateUserDto, userId: string): Promise<UserPublic> {
     if (id !== userId) throw new AppError(403, 'No tienes permiso para modificar este usuario');
 
+    const updateData: Record<string, unknown> = { ...data };
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+
     return prisma.user.update({
       where: { id },
-      data,
+      data: updateData,
       select: USER_SELECT,
     });
   },
@@ -52,10 +57,5 @@ export const usersService = {
     if (id !== userId) throw new AppError(403, 'No tienes permiso para eliminar este usuario');
 
     await prisma.user.delete({ where: { id } });
-  },
-
-  async existsByEmail(email: string): Promise<boolean> {
-    const user = await prisma.user.findUnique({ where: { email } });
-    return user !== null;
   },
 };

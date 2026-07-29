@@ -2,18 +2,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
 import { AppError } from '../utils/app-error';
+import { getJwtSecret, getJwtExpiry } from '../utils/jwt.util';
 import { AuthResponse } from '../types/auth.types';
 import { UserPublic } from '../types/user.types';
-
-function getSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new AppError(500, 'JWT_SECRET no configurado en el servidor');
-  return secret;
-}
-
-function getExpiry(): number {
-  return parseInt(process.env.JWT_EXPIRES_IN || '86400', 10);
-}
 
 export const authService = {
   async register(name: string, email: string, password: string): Promise<AuthResponse> {
@@ -30,8 +21,8 @@ export const authService = {
 
     const token = jwt.sign(
       { userId: user.id },
-      getSecret(),
-      { expiresIn: getExpiry() }
+      getJwtSecret(),
+      { expiresIn: getJwtExpiry() }
     );
 
     return { token, user };
@@ -50,8 +41,8 @@ export const authService = {
 
     const token = jwt.sign(
       { userId: user.id },
-      getSecret(),
-      { expiresIn: getExpiry() }
+      getJwtSecret(),
+      { expiresIn: getJwtExpiry() }
     );
 
     return {

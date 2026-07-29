@@ -1,12 +1,22 @@
 import prisma from '../config/database';
-import { MonthlySummaryResponse, BudgetVsActualResponse, MonthlyTrend, RawTrendRow } from '../types/report.types';
+import { MonthlySummaryResponse, BudgetVsActualResponse, MonthlyTrend, RawTrendRow, CategoryBreakdown } from '../types/report.types';
+import { CATEGORY_INCLUDE } from '../types/prisma-includes';
 
-const CATEGORY_INCLUDE = { category: { select: { id: true, name: true, icon: true, color: true } } } as const;
+const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+] as const;
+
+function getMonthRange(year: number, month: number) {
+  return {
+    start: new Date(year, month - 1, 1),
+    end: new Date(year, month, 0, 23, 59, 59, 999),
+  };
+}
 
 export const reportService = {
   async monthlySummary(userId: string, month: number, year: number): Promise<MonthlySummaryResponse> {
-    const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month, 0, 23, 59, 59, 999);
+    const { start, end } = getMonthRange(year, month);
 
     const transactions = await prisma.transaction.findMany({
       where: { userId, date: { gte: start, lte: end } },
@@ -21,13 +31,14 @@ export const reportService = {
       .filter(t => t.type === 'EXPENSE')
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    const byCategory: Record<string, { name: string; icon: string | null; color: string | null; amount: number; count: number }> = {};
+    const byCategory: Record<string, CategoryBreakdown> = {};
 
     for (const t of transactions) {
       const key = t.categoryId;
       if (!byCategory[key]) {
         byCategory[key] = {
           name: t.category.name,
+          type: t.type,
           icon: t.category.icon,
           color: t.category.color,
           amount: 0,
@@ -47,8 +58,7 @@ export const reportService = {
   },
 
   async budgetVsActual(userId: string, month: number, year: number): Promise<BudgetVsActualResponse> {
-    const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month, 0, 23, 59, 59, 999);
+    const { start, end } = getMonthRange(year, month);
 
     const [budgets, transactions] = await Promise.all([
       prisma.budget.findMany({
@@ -69,11 +79,11 @@ export const reportService = {
     const totalSpent = transactions.reduce((s, t) => s + Number(t.amount), 0);
     const totalBudget = budgets.reduce((s, b) => s + Number(b.amount), 0);
 
-    const details = budgets
+    const byCategory = budgets
       .filter(b => b.categoryId)
       .map(b => ({
         category: b.category,
-        budgeted: Number(b.amount),
+        budget: Number(b.amount),
         spent: spentByCategory[b.categoryId!] || 0,
         remaining: Number(b.amount) - (spentByCategory[b.categoryId!] || 0),
       }));
@@ -89,15 +99,13 @@ export const reportService = {
       totalBudget,
       totalSpent,
       globalRemaining: globalBudget - globalSpent,
-      details,
+      byCategory,
     };
   },
 
-  async trends(userId: string, months: number): Promise<MonthlyTrend[]> {
-    const start = new Date();
-    start.setMonth(start.getMonth() - months + 1);
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
+  async trends(userId: string, year: number): Promise<MonthlyTrend[]> {
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
 
     const rows = await prisma.$queryRaw<RawTrendRow[]>`
       SELECT
@@ -107,16 +115,30 @@ export const reportService = {
         COALESCE(SUM(CASE WHEN t.type = 'EXPENSE' THEN t.amount ELSE 0 END), 0) AS expense
       FROM "transactions" t
       WHERE t."userId" = ${userId}
-        AND t."date" >= ${start}
+        AND t."date" >= ${startDate}
+        AND t."date" <= ${endDate}
       GROUP BY year, month
-      ORDER BY year, month
+      ORDER BY month ASC
     `;
 
-    return rows.map(r => ({
-      month: r.month,
-      year: r.year,
-      income: Number(r.income),
-      expense: Number(r.expense),
-    }));
+    const dataMap = new Map<number, { income: number; expense: number }>();
+    for (const r of rows) {
+      dataMap.set(r.month, {
+        income: Number(r.income),
+        expense: Number(r.expense),
+      });
+    }
+
+    return Array.from({ length: 12 }, (_, i) => {
+      const m = i + 1;
+      const data = dataMap.get(m) ?? { income: 0, expense: 0 };
+      return {
+        month: MONTH_NAMES[i],
+        year,
+        income: data.income,
+        expense: data.expense,
+        balance: data.income - data.expense,
+      };
+    });
   },
 };

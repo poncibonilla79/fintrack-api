@@ -31,8 +31,8 @@ export const reportController = {
   async trends(req: Request, res: Response, next: NextFunction) {
     try {
       const query = req.query as Record<string, string | undefined>;
-      const months = Number(query.months) || 6;
-      const data = await reportService.trends(getAuthUserId(req), months);
+      const year = Number(query.year) || new Date().getFullYear();
+      const data = await reportService.trends(getAuthUserId(req), year);
       sendSuccess(res, data);
     } catch (error) {
       next(error);

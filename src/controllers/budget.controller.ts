@@ -28,7 +28,7 @@ export const budgetController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const budget = await budgetService.update(id, getAuthUserId(req), req.body.amount);
+      const budget = await budgetService.update(id, getAuthUserId(req), req.body);
       sendSuccess(res, budget, 'Presupuesto actualizado');
     } catch (error) {
       next(error);

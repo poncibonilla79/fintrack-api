@@ -2,12 +2,7 @@ import { Prisma } from '@prisma/client';
 import prisma from '../config/database';
 import { AppError } from '../utils/app-error';
 import { CreateTransactionDto, UpdateTransactionDto, TransactionFilter } from '../types/transaction.types';
-
-const categoryInclude = {
-  category: { select: { id: true, name: true, icon: true, color: true } },
-} satisfies Prisma.TransactionInclude;
-
-type TransactionWithCategory = Prisma.TransactionGetPayload<{ include: typeof categoryInclude }>;
+import { CATEGORY_INCLUDE, TransactionWithCategory } from '../types/prisma-includes';
 
 export const transactionService = {
   async list(userId: string, filters: TransactionFilter): Promise<TransactionWithCategory[]> {
@@ -24,7 +19,7 @@ export const transactionService = {
 
     return prisma.transaction.findMany({
       where,
-      include: categoryInclude,
+      include: CATEGORY_INCLUDE,
       orderBy: { date: 'desc' },
     });
   },
@@ -39,7 +34,7 @@ export const transactionService = {
         categoryId: data.categoryId,
         userId,
       },
-      include: categoryInclude,
+      include: CATEGORY_INCLUDE,
     });
   },
 
@@ -62,7 +57,7 @@ export const transactionService = {
     return prisma.transaction.update({
       where: { id },
       data: cleanData,
-      include: categoryInclude,
+      include: CATEGORY_INCLUDE,
     });
   },
 

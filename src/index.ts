@@ -13,14 +13,12 @@ const server = app.listen(PORT, () => {
   console.log(`📊 Reports:      /api/reports/monthly  /api/reports/budget  /api/reports/trends\n`);
 });
 
-process.on('SIGTERM', async () => {
+async function shutdown() {
   await prisma.$disconnect();
   server.close(() => process.exit(0));
-});
+}
 
-process.on('SIGINT', async () => {
-  await prisma.$disconnect();
-  server.close(() => process.exit(0));
-});
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
 export default server;

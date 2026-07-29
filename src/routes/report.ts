@@ -13,7 +13,7 @@ const monthlySchema = z.object({
 
 const trendsSchema = z.object({
   query: z.object({
-    months: z.coerce.number().int().min(1).max(60).default(6),
+    year: z.coerce.number().int().min(2000).max(2100),
   }),
 });
 

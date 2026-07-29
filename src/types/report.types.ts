@@ -1,5 +1,6 @@
 export interface CategoryBreakdown {
   name: string;
+  type: string;
   icon: string | null;
   color: string | null;
   amount: number;
@@ -20,7 +21,7 @@ export interface BudgetDetail {
     icon: string | null;
     color: string | null;
   } | null;
-  budgeted: number;
+  budget: number;
   spent: number;
   remaining: number;
 }
@@ -29,14 +30,15 @@ export interface BudgetVsActualResponse {
   totalBudget: number;
   totalSpent: number;
   globalRemaining: number;
-  details: BudgetDetail[];
+  byCategory: BudgetDetail[];
 }
 
 export interface MonthlyTrend {
-  month: number;
+  month: string;
   year: number;
   income: number;
   expense: number;
+  balance: number;
 }
 
 export interface RawTrendRow {

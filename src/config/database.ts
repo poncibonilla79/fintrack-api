@@ -1,15 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // Conexión a BD — Singleton PrismaClient con adapter PostgreSQL
-//
-// Patrón:
-//   - Pool de pg compartido (PrismaPg adapter)
-//   - Singleton global reciclado en desarrollo (hot-reload)
-//   - dotenv.config() al inicio asegura vars de entorno disponibles
-//
-// Para migrar a otra BD:
-//   1. Cambiar provider en schema.prisma
-//   2. Cambiar adapter aquí (ej: @prisma/adapter-planetscale)
-//   3. Ajustar DATABASE_URL en .env
 // ═══════════════════════════════════════════════════════════════════════════
 
 import dotenv from 'dotenv';

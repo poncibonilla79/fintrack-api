@@ -24,18 +24,20 @@ export const categoryService = {
 
   async update(id: string, userId: string, data: UpdateCategoryDto) {
     const category = await prisma.category.findFirst({
-      where: { id, userId },
+      where: { id, OR: [{ userId }, { userId: null }] },
     });
     if (!category) throw new AppError(404, 'Categoria no encontrada');
+    if (category.userId === null) throw new AppError(403, 'No se pueden editar categorias globales');
 
     return prisma.category.update({ where: { id }, data });
   },
 
   async remove(id: string, userId: string) {
     const category = await prisma.category.findFirst({
-      where: { id, userId },
+      where: { id, OR: [{ userId }, { userId: null }] },
     });
     if (!category) throw new AppError(404, 'Categoria no encontrada');
+    if (category.userId === null) throw new AppError(403, 'No se pueden eliminar categorias globales');
 
     const txCount = await prisma.transaction.count({ where: { categoryId: id } });
     if (txCount > 0) {

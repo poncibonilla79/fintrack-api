@@ -15,6 +15,7 @@ import jwt from 'jsonwebtoken';
 import { JwtPayload } from '../types/auth.types';
 import { sendError } from '../utils/response.util';
 import { AppError } from '../utils/app-error';
+import { getJwtSecret } from '../utils/jwt.util';
 
 declare global {
   namespace Express {
@@ -22,14 +23,6 @@ declare global {
       user?: JwtPayload;
     }
   }
-}
-
-function getSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new AppError(500, 'JWT_SECRET no configurado en el servidor');
-  }
-  return secret;
 }
 
 export const authMiddleware = (
@@ -47,7 +40,7 @@ export const authMiddleware = (
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, getSecret()) as JwtPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as JwtPayload;
     req.user = decoded;
     next();
   } catch {

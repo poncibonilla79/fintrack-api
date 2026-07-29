@@ -293,12 +293,12 @@ User ──┬── Category (userId? = null → global)
 
 ---
 
-## Variables de entorno (.env)
+## Variables de entorno
 
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/fintrack_db
-JWT_SECRET=tu-secreto-aqui
-JWT_EXPIRES_IN=86400
-PORT=3000
-CORS_ORIGINS=http://localhost:5173,http://localhost:5174
+Copiar `.env.example` a `.env` y configurar:
+
+```bash
+cp .env.example .env
 ```
+
+Ver `.env.example` para las variables requeridas (`DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `PORT`, `CORS_ORIGINS`).

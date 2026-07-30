@@ -35,6 +35,9 @@ COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/prisma.config.ts ./
+COPY --from=builder --chown=nodejs:nodejs /app/src ./src
+
+RUN npm install -g tsx
 
 USER nodejs
 
@@ -45,4 +48,4 @@ ENV NODE_ENV=production
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD wget -qO- http://localhost:3000/health || exit 1
 
-CMD ["dumb-init", "sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["dumb-init", "sh", "-c", "npx prisma migrate deploy && tsx prisma/seed.ts && node dist/index.js"]

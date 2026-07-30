@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import prisma from '../src/config/database';
 
 const DEFAULT_CATEGORIES = [
@@ -14,14 +15,16 @@ const DEFAULT_CATEGORIES = [
 ];
 
 async function main() {
+  const passwordHash = await bcrypt.hash('password123', 10);
+
   const user = await prisma.user.upsert({
     where: { email: 'demo@fintrack.com' },
-    update: {},
+    update: { password: passwordHash },
     create: {
       id: 'seed-user-demo',
       name: 'Usuario Demo',
       email: 'demo@fintrack.com',
-      password: '$2a$10$8K1p/a0dL1LXMIgoEDFrwOfMQkfAjkMBcGm0GqTmZ3XkqOjVsqOae',
+      password: passwordHash,
     },
   });
 
